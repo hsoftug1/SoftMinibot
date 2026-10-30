@@ -23,3 +23,20 @@ export async function requestPairing(formData:FormData){
  if(error)throw new Error('Unable to request pairing');revalidatePath('/dashboard');
 }
 export async function signOut(){const s=await supabaseServer();await s.auth.signOut();redirect('/login');}
+
+export async function updateAntiDelete(formData:FormData){
+ const supabase=await supabaseServer();
+ const {data:{user}}=await supabase.auth.getUser();
+ if(!user)redirect('/login');
+ const botId=String(formData.get('botId')||'');
+ const enabled=formData.get('enabled')==='on';
+ const retentionHours=Number(formData.get('retentionHours')||24);
+ if(!Number.isInteger(retentionHours)||retentionHours<1||retentionHours>168)throw new Error('Invalid retention period');
+ const {data:bot,error:botError}=await supabase.from('bot_instances').select('id,tenant_id').eq('id',botId).single();
+ if(botError||!bot)throw new Error('Bot unavailable');
+ const {data:owner}=await supabase.from('tenant_members').select('role').eq('tenant_id',bot.tenant_id).eq('user_id',user.id).eq('role','owner').maybeSingle();
+ if(!owner)throw new Error('Only the workspace owner may change Anti-Delete settings');
+ const {error}=await supabase.from('bot_privacy_settings').upsert({bot_instance_id:bot.id,tenant_id:bot.tenant_id,anti_delete_enabled:enabled,retention_hours:retentionHours,updated_at:new Date().toISOString()},{onConflict:'bot_instance_id'});
+ if(error)throw new Error('Unable to save Anti-Delete settings');
+ revalidatePath('/dashboard');
+}
