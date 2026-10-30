@@ -12,7 +12,7 @@ async function tick(){
   const now=new Date().toISOString();
   const {data,error}=await supabase.from('pairing_requests').select('id,bot_instance_id,tenant_id,status,expires_at').eq('status','pending').lt('expires_at',now).limit(100);
   if(error)throw error;
-  const {error:purgeError}=await supabase.from('retained_deleted_messages').delete().lt('expires_at',now);
+  const {error:purgeError}=await supabase.from('deleted_message_archive').delete().lt('expires_at',now);
   if(purgeError)throw purgeError;
   for(const request of data||[]){
    const {error:updateError}=await supabase.from('pairing_requests').update({status:'expired'}).eq('id',request.id).eq('status','pending');
