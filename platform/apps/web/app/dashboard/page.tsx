@@ -1,0 +1,10 @@
+import {supabaseServer} from '../../lib/supabase/server';
+import {createBot,requestPairing,signOut} from './actions';
+export default async function Dashboard(){
+ const supabase=await supabaseServer();const {data:{user}}=await supabase.auth.getUser();
+ const {data:memberships}=await supabase.from('tenant_members').select('tenant_id,role').eq('user_id',user!.id);
+ const tenantIds=(memberships||[]).map(m=>m.tenant_id);
+ const {data:bots}=tenantIds.length?await supabase.from('bot_instances').select('id,tenant_id,display_name,status').in('tenant_id',tenantIds).order('created_at',{ascending:false}):{data:[]};
+ const {data:pending}=tenantIds.length?await supabase.from('pairing_requests').select('bot_instance_id,expires_at,status').in('tenant_id',tenantIds).eq('status','pending').gt('expires_at',new Date().toISOString()):{data:[]};
+ return <><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:16}}><div><h1>My dashboard</h1><p className="muted">Signed in as {user?.email}</p></div><form action={signOut}><button className="btn secondary">Sign out</button></form></div><section className="card"><h2>Create a bot</h2><form action={createBot}><label>Bot name<input name="name" required minLength={2} maxLength={80} placeholder="My SoftMinibot"/></label><button className="btn">Create bot</button></form></section><h2>Your bots</h2><section className="grid">{bots?.map(bot=><div className="card" key={bot.id}><h2>{bot.display_name}</h2><p className="muted">Status: {bot.status}</p>{pending?.some(p=>p.bot_instance_id===bot.id)?<p className="pill">Pairing requested — awaiting worker</p>:bot.status==='connected'?<p className="success">Connected</p>:<form action={requestPairing}><input type="hidden" name="botId" value={bot.id}/><button className="btn">Request pairing</button></form>}<p className="muted" style={{fontSize:13}}>QR/pairing codes will become available when the persistent worker is connected.</p></div>)}{!bots?.length&&<div className="card"><p className="muted">No bots yet. Create one to get started.</p></div>}</section></>;
+}
