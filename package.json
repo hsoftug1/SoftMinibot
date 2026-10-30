@@ -1,7 +1,7 @@
 {
-  "name": "Toxic-md",
+  "name": "softminibot",
   "version": "1.2.2",
-  "description": "A lightning-fast WhatsApp bot with multi-device support, built on Node.js & Baileys.",
+  "description": "SoftMinibot — WhatsApp automation and group management by Hifi Tech Solutions",
   "main": "index.js",
   "type": "module",
   "scripts": {
@@ -50,5 +50,6 @@
     "bufferutil": "^4.0.8",
     "canvas": "^2.11.2",
     "canvacord": "^5.4.10"
-  }
+  },
+  "author": "Hifi Tech Solutions"
 }
